@@ -243,7 +243,7 @@ def render_sidebar(meta: dict) -> str:
 
 
 def render_hero(meta: dict) -> None:
-    hero_image = HERO_IMAGE_B64_PATH.read_text(encoding="ascii").strip()
+    hero_image = HERO_IMAGE_B64_PATH.read_text(encoding="utf-8-sig").strip()
     st.markdown(
         f"""
         <div class="hero">
