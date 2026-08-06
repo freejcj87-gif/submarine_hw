@@ -102,7 +102,7 @@ def inject_css() -> None:
         }}
         .hero-copy {{ position:relative; z-index:2; width:53%; }}
         .eyebrow {{ font:600 .72rem 'IBM Plex Mono'; color:var(--mint); letter-spacing:.14em; text-transform:uppercase; }}
-        .hero h1 {{ font-size:clamp(2rem, 4vw, 3.5rem); line-height:1.03; margin:.65rem 0 .9rem; color:#F4F8FB; letter-spacing:-.04em; }}
+        .hero h1 {{ font-size:clamp(2rem, 4vw, 3.5rem); line-height:1.03; margin:.65rem 0 .9rem; color:#F4F8FB; letter-spacing:-.04em; word-break:keep-all; }}
         .hero p {{ color:#B8CAD5; max-width:720px; font-size:1rem; line-height:1.65; margin:0; }}
         .hero-meta {{ display:flex; flex-wrap:wrap; gap:.55rem; align-items:center; margin-top:1.2rem; }}
         .status-chip {{
@@ -171,7 +171,7 @@ def inject_css() -> None:
         .stTabs [data-baseweb="tab"] {{ background:rgba(10,32,53,.65); border-radius:9px; padding:.45rem .8rem; }}
         .stTabs [aria-selected="true"] {{ color:var(--gold)!important; border-bottom-color:var(--gold)!important; }}
         a {{ color:var(--mint); }}
-        @media (max-width: 800px) {{
+        @media (max-width: 1100px) {{
             .hero {{ min-height:340px; padding:1.5rem; }}
             .hero-copy {{ width:100%; }}
             .hero-visual {{ object-position:66% center; opacity:.54; }}
