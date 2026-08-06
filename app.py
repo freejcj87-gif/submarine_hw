@@ -306,8 +306,19 @@ def explorer_page(data: pd.DataFrame) -> None:
     f1, f2, f3, f4 = st.columns(4)
     regions = f1.multiselect("지역", sorted(data["region"].unique()), default=sorted(data["region"].unique()))
     statuses = f2.multiselect("운영 상태", sorted(data["status"].unique()), default=sorted(data["status"].unique()))
-    confidence = f3.multiselect("신뢰도", ["A", "B", "C", "D"], default=["A", "B", "C"])
-    min_rel = f4.slider("장보고함 관련도", 1, 5, 3)
+    confidence = f3.multiselect(
+        "근거 신뢰도 등급",
+        ["A", "B", "C", "D"],
+        default=["A", "B", "C"],
+        help="A: 공식자료+교차검증 · B: 공식자료 또는 신뢰 가능한 2개 출처 · C: 신뢰 가능한 1개 출처 · D: 추가 검증 필요",
+    )
+    min_rel = f4.slider(
+        "장보고함 적용성 (최소)",
+        1,
+        5,
+        3,
+        help="장보고함 전시 계획에 직접 참고할 수 있는 정도입니다. 5점이 가장 높습니다.",
+    )
     filtered = data[
         data["region"].isin(regions)
         & data["status"].isin(statuses)
@@ -315,15 +326,44 @@ def explorer_page(data: pd.DataFrame) -> None:
         & (data["relevance"] >= min_rel)
     ].copy()
 
-    st.caption(f"{len(filtered)}개 사례 표시")
-    display = filtered[["case_name", "vessel", "country", "class_type", "display_mode", "status", "length_m", "confidence", "priority"]].rename(
-        columns={"case_name": "시설", "vessel": "함정", "country": "국가", "class_type": "함급", "display_mode": "전시 방식", "status": "상태", "length_m": "길이(m)", "confidence": "근거", "priority": "우선순위"}
+    st.caption(f"조건에 맞는 사례 {len(filtered)}개 · 표는 가로로 스크롤할 수 있습니다.")
+    display = filtered[["case_name", "vessel", "country", "class_type", "display_mode", "status", "length_m", "relevance", "confidence", "priority"]].rename(
+        columns={
+            "case_name": "전시시설명",
+            "vessel": "전시 함정",
+            "country": "국가",
+            "class_type": "함급·형식",
+            "display_mode": "전시 형태",
+            "status": "공개 상태",
+            "length_m": "전장",
+            "relevance": "장보고함 적용성",
+            "confidence": "근거 신뢰도",
+            "priority": "현장조사 우선순위",
+        }
     )
     st.dataframe(
-        display.sort_values(["우선순위", "근거"]),
+        display.sort_values(["현장조사 우선순위", "근거 신뢰도"]),
         use_container_width=True,
         hide_index=True,
-        column_config={"길이(m)": st.column_config.NumberColumn(format="%.1f m"), "우선순위": st.column_config.NumberColumn(format="Tier %d")},
+        height=460,
+        column_config={
+            "전시시설명": st.column_config.TextColumn(width=210),
+            "전시 함정": st.column_config.TextColumn(width=155),
+            "국가": st.column_config.TextColumn(width=90),
+            "함급·형식": st.column_config.TextColumn(width=170),
+            "전시 형태": st.column_config.TextColumn(width=145),
+            "공개 상태": st.column_config.TextColumn(width=135),
+            "전장": st.column_config.NumberColumn(format="%.1f m", width=90),
+            "장보고함 적용성": st.column_config.ProgressColumn(
+                help="장보고함 전시 계획에 대한 적용 가능성 (5점 만점)", min_value=1, max_value=5, format="%d / 5", width=145
+            ),
+            "근거 신뢰도": st.column_config.TextColumn(
+                help="자료의 검증 수준: A가 가장 높고 D는 추가 검증 필요", width=120
+            ),
+            "현장조사 우선순위": st.column_config.NumberColumn(
+                help="사례의 품질 등급이 아니라 후속 심층조사 순서입니다.", format="%d순위", width=155
+            ),
+        },
     )
 
     if filtered.empty:
@@ -341,7 +381,7 @@ def explorer_page(data: pd.DataFrame) -> None:
         a.metric("전시 방식", row["display_mode"])
         b.metric("상태", row["status"])
         c.metric("길이", f"{row['length_m']:.1f} m")
-        d.metric("근거", row["confidence"])
+        d.metric("근거 신뢰도", f"{row['confidence']}등급")
         st.markdown("**장보고함 적용 시사점**")
         st.write(row["insight"])
         st.markdown("**관람·접근성**")
@@ -357,7 +397,7 @@ def explorer_page(data: pd.DataFrame) -> None:
         )
         st.markdown("**PRIMARY SOURCE**")
         st.markdown(f"[공식·준공식 자료 열기 ↗]({row['source_url']})")
-        st.caption(f"Case ID  {row['id']}  ·  Priority Tier {int(row['priority'])}")
+        st.caption(f"Case ID  {row['id']}  ·  현장조사 {int(row['priority'])}순위")
 
 
 def decision_page() -> None:
@@ -500,3 +540,4 @@ elif page == "데이터 정합성":
     quality_page(data)
 else:
     roadmap_page()
+
