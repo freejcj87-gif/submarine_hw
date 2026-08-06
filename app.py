@@ -13,6 +13,7 @@ import streamlit as st
 ROOT = Path(__file__).parent
 DATA_PATH = ROOT / "data" / "cases.csv"
 META_PATH = ROOT / "data" / "meta.json"
+HERO_IMAGE_B64_PATH = ROOT / "assets" / "jangbogo-hero-v2.b64"
 
 NAVY = "#06121F"
 NAVY_2 = "#0A2035"
@@ -79,29 +80,43 @@ def inject_css() -> None:
         .brand-sub {{ color:var(--muted); font-size:.68rem; letter-spacing:.08em; margin-top:.2rem; }}
 
         .hero {{
-            position:relative; overflow:hidden; min-height:245px; border-radius:20px;
+            position:relative; overflow:hidden; min-height:315px; border-radius:20px;
             padding:2.1rem 2.3rem; margin-bottom:1rem;
             border:1px solid rgba(113,215,197,.22);
             background:linear-gradient(120deg, rgba(11,44,69,.98), rgba(7,27,43,.94));
             box-shadow:0 20px 55px rgba(0,0,0,.18);
         }}
         .hero::before {{
-            content:""; position:absolute; inset:0;
+            content:""; position:absolute; inset:0; z-index:1;
             background-image:linear-gradient(rgba(113,215,197,.045) 1px, transparent 1px),
                              linear-gradient(90deg, rgba(113,215,197,.045) 1px, transparent 1px);
             background-size:34px 34px; mask-image:linear-gradient(90deg, black, transparent 85%);
         }}
-        .hero-copy {{ position:relative; z-index:2; width:68%; }}
+        .hero::after {{
+            content:""; position:absolute; inset:0; z-index:1;
+            background:linear-gradient(90deg, rgba(4,17,29,.98) 0%, rgba(4,17,29,.90) 37%, rgba(4,17,29,.26) 68%, rgba(4,17,29,.08) 100%);
+        }}
+        .hero-visual {{
+            position:absolute; inset:0; width:100%; height:100%; object-fit:cover;
+            object-position:center; opacity:.94;
+        }}
+        .hero-copy {{ position:relative; z-index:2; width:53%; }}
         .eyebrow {{ font:600 .72rem 'IBM Plex Mono'; color:var(--mint); letter-spacing:.14em; text-transform:uppercase; }}
         .hero h1 {{ font-size:clamp(2rem, 4vw, 3.5rem); line-height:1.03; margin:.65rem 0 .9rem; color:#F4F8FB; letter-spacing:-.04em; }}
         .hero p {{ color:#B8CAD5; max-width:720px; font-size:1rem; line-height:1.65; margin:0; }}
-        .hero-art {{ position:absolute; right:1.6rem; top:1.1rem; width:30%; height:88%; opacity:.82; }}
+        .hero-meta {{ display:flex; flex-wrap:wrap; gap:.55rem; align-items:center; margin-top:1.2rem; }}
         .status-chip {{
-            display:inline-flex; align-items:center; gap:.45rem; margin-top:1.2rem;
+            display:inline-flex; align-items:center; gap:.45rem;
             padding:.4rem .72rem; border-radius:999px; color:#CDEBE6; background:rgba(113,215,197,.08);
             border:1px solid rgba(113,215,197,.22); font:500 .72rem 'IBM Plex Mono';
         }}
         .status-dot {{ width:7px; height:7px; background:var(--mint); border-radius:50%; box-shadow:0 0 10px var(--mint); }}
+        .reporter-chip {{
+            display:inline-flex; align-items:center; gap:.48rem; padding:.4rem .72rem; border-radius:999px;
+            color:var(--ice); background:rgba(245,196,81,.09); border:1px solid rgba(245,196,81,.30);
+            font-size:.75rem;
+        }}
+        .reporter-label {{ color:var(--gold); font:600 .68rem 'IBM Plex Mono'; letter-spacing:.07em; }}
 
         .metric-card {{
             min-height:126px; border-radius:14px; padding:1rem 1.05rem;
@@ -156,7 +171,12 @@ def inject_css() -> None:
         .stTabs [data-baseweb="tab"] {{ background:rgba(10,32,53,.65); border-radius:9px; padding:.45rem .8rem; }}
         .stTabs [aria-selected="true"] {{ color:var(--gold)!important; border-bottom-color:var(--gold)!important; }}
         a {{ color:var(--mint); }}
-        @media (max-width: 800px) {{ .hero-copy {{ width:100%; }} .hero-art {{ display:none; }} .hero {{ padding:1.5rem; }} }}
+        @media (max-width: 800px) {{
+            .hero {{ min-height:340px; padding:1.5rem; }}
+            .hero-copy {{ width:100%; }}
+            .hero-visual {{ object-position:66% center; opacity:.54; }}
+            .hero::after {{ background:linear-gradient(90deg, rgba(4,17,29,.96), rgba(4,17,29,.72) 68%, rgba(4,17,29,.26)); }}
+        }}
         @media (max-width: 540px) {{ .case-metric-grid {{ grid-template-columns:1fr; }} }}
         </style>
         """,
@@ -223,26 +243,20 @@ def render_sidebar(meta: dict) -> str:
 
 
 def render_hero(meta: dict) -> None:
+    hero_image = HERO_IMAGE_B64_PATH.read_text(encoding="ascii").strip()
     st.markdown(
         f"""
         <div class="hero">
+          <img class="hero-visual" src="data:image/webp;base64,{hero_image}" alt="장형우 소령과 Type 209 계열 잠수함 합성 이미지">
           <div class="hero-copy">
             <div class="eyebrow">Heritage Mission · Jang Bogo Class</div>
             <h1>퇴역 장보고함<br>전시 벤치마킹</h1>
             <p>국내외 잠수함 박물관의 보존·안전·관람·운영 데이터를 하나의 작전 화면으로 통합합니다.</p>
-            <div class="status-chip"><span class="status-dot"></span>{meta['phase']} · {meta['as_of']}</div>
+            <div class="hero-meta">
+              <div class="status-chip"><span class="status-dot"></span>{meta['phase']} · {meta['as_of']}</div>
+              <div class="reporter-chip"><span class="reporter-label">보고자</span><strong>장형우 소령</strong></div>
+            </div>
           </div>
-          <svg class="hero-art" viewBox="0 0 420 260" role="img" aria-label="잠수함과 소나 그래픽">
-            <g fill="none" stroke="#71D7C5" opacity=".22">
-              <circle cx="270" cy="125" r="42"/><circle cx="270" cy="125" r="78"/><circle cx="270" cy="125" r="114"/>
-              <path d="M270 11V239M156 125H384"/><path d="M190 45L350 205M350 45L190 205"/>
-            </g>
-            <path d="M57 145 C88 119 139 111 242 113 L315 116 C336 117 352 127 360 138 C350 149 333 157 311 159 L137 162 C101 162 75 157 57 145Z" fill="#0F405A" stroke="#71D7C5" stroke-width="2"/>
-            <path d="M205 112 L217 81 L250 82 L263 114" fill="#0F405A" stroke="#71D7C5" stroke-width="2"/>
-            <path d="M226 82V65H244" fill="none" stroke="#F5C451" stroke-width="3"/>
-            <path d="M56 144L35 129V160Z" fill="#0F405A" stroke="#71D7C5" stroke-width="2"/>
-            <circle cx="270" cy="125" r="5" fill="#F5C451"/>
-          </svg>
         </div>
         """,
         unsafe_allow_html=True,
