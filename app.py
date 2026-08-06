@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+from html import escape
 from pathlib import Path
 
 import pandas as pd
@@ -130,6 +131,21 @@ def inject_css() -> None:
         .source-link a {{ color:var(--mint)!important; text-decoration:none; }}
         .case-head {{ border-top:1px solid rgba(113,215,197,.2); padding-top:1rem; margin-top:.6rem; }}
         .mono {{ font-family:'IBM Plex Mono'; }}
+        .case-metric-grid {{
+            display:grid; grid-template-columns:repeat(2, minmax(0, 1fr));
+            gap:.75rem; margin:1rem 0 1.35rem;
+        }}
+        .case-metric {{
+            min-width:0; min-height:108px; padding:1rem 1.1rem; border-radius:14px;
+            border:1px solid rgba(145,168,184,.22); background:rgba(10,32,53,.72);
+        }}
+        .case-metric-label {{
+            color:var(--muted); font-size:.78rem; font-weight:600; margin-bottom:.55rem;
+        }}
+        .case-metric-value {{
+            color:var(--ice); font-size:clamp(1.15rem, 2.3vw, 1.55rem); font-weight:700;
+            line-height:1.3; overflow-wrap:anywhere; word-break:keep-all;
+        }}
 
         div[data-testid="stMetric"] {{
             background:rgba(10,32,53,.72); border:1px solid rgba(145,168,184,.16);
@@ -141,6 +157,7 @@ def inject_css() -> None:
         .stTabs [aria-selected="true"] {{ color:var(--gold)!important; border-bottom-color:var(--gold)!important; }}
         a {{ color:var(--mint); }}
         @media (max-width: 800px) {{ .hero-copy {{ width:100%; }} .hero-art {{ display:none; }} .hero {{ padding:1.5rem; }} }}
+        @media (max-width: 540px) {{ .case-metric-grid {{ grid-template-columns:1fr; }} }}
         </style>
         """,
         unsafe_allow_html=True,
@@ -373,31 +390,36 @@ def explorer_page(data: pd.DataFrame) -> None:
     section("CASE DETAIL", "선택 사례 상세")
     choice = st.selectbox("시설 선택", filtered.sort_values(["priority", "case_name"])["case_name"], label_visibility="collapsed")
     row = filtered.loc[filtered["case_name"] == choice].iloc[0]
-    left, right = st.columns([1.15, .85])
-    with left:
-        st.markdown(f"### {row['case_name']}")
-        st.caption(f"{row['vessel']} · {row['country']} {row['city']} · {row['class_type']}")
-        a, b, c, d = st.columns(4)
-        a.metric("전시 방식", row["display_mode"])
-        b.metric("상태", row["status"])
-        c.metric("길이", f"{row['length_m']:.1f} m")
-        d.metric("근거 신뢰도", f"{row['confidence']}등급")
-        st.markdown("**장보고함 적용 시사점**")
-        st.write(row["insight"])
-        st.markdown("**관람·접근성**")
-        st.write(f"{row['accessibility']} · {row['throughput']}")
-        st.markdown("**보존·공개 비용**")
-        st.write(f"{row['conservation']} · {row['cost_public']}")
-    with right:
-        st.markdown("**DATA WARNING**")
-        st.markdown(
-            f'<div class="warning-card"><div class="warning-title">확인 필요</div>'
-            f'<div class="warning-copy">{row["data_warning"]}</div></div>',
-            unsafe_allow_html=True,
-        )
-        st.markdown("**PRIMARY SOURCE**")
-        st.markdown(f"[공식·준공식 자료 열기 ↗]({row['source_url']})")
-        st.caption(f"Case ID  {row['id']}  ·  현장조사 {int(row['priority'])}순위")
+    st.markdown(f"### {row['case_name']}")
+    st.caption(f"{row['vessel']} · {row['country']} {row['city']} · {row['class_type']}")
+    case_metrics = [
+        ("전시 형태", row["display_mode"]),
+        ("공개 상태", row["status"]),
+        ("전장", f"{row['length_m']:.1f} m"),
+        ("근거 신뢰도", f"{row['confidence']}등급"),
+    ]
+    metric_html = "".join(
+        f'<div class="case-metric"><div class="case-metric-label">{escape(label)}</div>'
+        f'<div class="case-metric-value">{escape(str(value))}</div></div>'
+        for label, value in case_metrics
+    )
+    st.markdown(f'<div class="case-metric-grid">{metric_html}</div>', unsafe_allow_html=True)
+
+    st.markdown("**장보고함 적용 시사점**")
+    st.write(row["insight"])
+    st.markdown("**관람·접근성**")
+    st.write(f"{row['accessibility']} · {row['throughput']}")
+    st.markdown("**보존·공개 비용**")
+    st.write(f"{row['conservation']} · {row['cost_public']}")
+    st.markdown("**DATA WARNING**")
+    st.markdown(
+        f'<div class="warning-card"><div class="warning-title">확인 필요</div>'
+        f'<div class="warning-copy">{escape(str(row["data_warning"]))}</div></div>',
+        unsafe_allow_html=True,
+    )
+    st.markdown("**PRIMARY SOURCE**")
+    st.markdown(f"[공식·준공식 자료 열기 ↗]({row['source_url']})")
+    st.caption(f"Case ID  {row['id']}  ·  현장조사 {int(row['priority'])}순위")
 
 
 def decision_page() -> None:
